@@ -71,7 +71,8 @@ async function generate() {
 
   const title = document.getElementById('input-title').value;
   const name = document.getElementById('input-name').value;
-
+  const content = document.getElementById('input-content').value;
+  
   // 1. 更新預覽文字
   document.getElementById('show-title').innerText = title;
   document.getElementById('show-body').innerText = document.getElementById('input-content').value;
@@ -80,11 +81,11 @@ async function generate() {
   document.getElementById('show-date').innerText = document.getElementById('input-date').value;
 
   // 2. 靜默發送數據到 GAS 記錄 (API 調用)
-  const gas_url = "https://script.google.com/macros/s/AKfycbwcDdyhexd2z8bxLa5VEShdqJjqbcwnh-DI-fPLTJuLgV_T7y0psyxQ0aGWVVZKu2UT/exec"; // 請替換為您的 GAS /exec 連結
+  const gas_url = "https://script.google.com/macros/s/AKfycbwRu5P74s_0LMbIB8u6qo04bX-NGGsGa9l2pc32xz4o16DgDq7RxIYXAGlfTkqbzO_8/exec"; // 請替換為您的 GAS /exec 連結
   fetch(gas_url, {
     method: "POST",
     mode: "no-cors", // 跨域關鍵：no-cors
-    body: JSON.stringify({ title: title, user: name })
+    body: JSON.stringify({ title: title, user: name, content: content })
   });
 
   // 3. 截圖
