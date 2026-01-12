@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>僑港順德龍山同鄉會 - 公文生成系統</title>
+    <style>
+        /* 消除網頁邊距，確保全屏顯示 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* 由 iframe 內部處理滾動 */
+            background-color: #e0e0e0;
+        }
+
+        /* 設置 iframe 樣式 */
+        #gas-app {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* 針對移動端的優化：確保內容不會被擋住 */
+        @media screen and (max-width: 768px) {
+            #gas-app {
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <iframe 
+        id="gas-app"
+        src="https://script.google.com/macros/s/AKfycbwJvA9rBuxANlpyYAlyfTS_50Qm7xbkNfFqPlwijOJsSTxCvXMto9GKvfGlL1IQPkg/exec" 
+        allow="clipboard-read; clipboard-write"
+        frameborder="0">
+    </iframe>
+
+</body>
+</html>
