@@ -18,32 +18,25 @@
     #canvas-area { background: white; width: 794px; height: 1123px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
     .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
     .header-img { width: 100%; display: block; }
-    .paper-content { padding: 60px 80px; flex: 1; display: flex; flex-direction: column; }
-    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 50px; line-height: 1.5; }
+    .paper-content { padding: 40px 80px; flex: 1; display: flex; flex-direction: column; }
+    
+    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 40px; line-height: 1.5; }
+    
+    /* 新增：送達單位樣式 (頂格顯示) */
+    .doc-recipient { font-size: 20px; font-weight: bold; line-height: 1.8; margin-bottom: 10px; text-indent: 0; position: relative; z-index: 5; }
+    
     .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 30px; position: relative; z-index: 5; }
     .doc-salutation { font-size: 20px; padding-left: 2em; margin-bottom: 20px; position: relative; z-index: 5; }
     
-    /* 落款區域：修正層級讓文字在印章上方 */
+    /* 落款樣式 */
     .signature-container { align-self: flex-end; display: flex; flex-direction: column; align-items: center; min-width: 250px; position: relative; margin-top: 20px; }
-    .sig-name, .sig-date { position: relative; z-index: 10; font-weight: normal; } /* 文字 z-index 設為高 */
+    .sig-name, .sig-date { position: relative; z-index: 10; font-weight: normal; } 
     .sig-name { font-size: 22px; margin-bottom: 8px; }
     .sig-date { font-size: 18px; }
     
-    /* 印章樣式：z-index 設為低 */
-    #doc-seal { 
-      display: none; 
-      position: absolute; 
-      width: 150px; 
-      height: 150px; 
-      top: -35px; 
-      left: 50%; 
-      transform: translateX(-50%); 
-      opacity: 0.9; 
-      z-index: 1; /* 印章 z-index 設為低，確保在文字下方 */
-      pointer-events: none; 
-    }
+    /* 印章層級 */
+    #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
 
-    /* 預覽與蓋章操作區 */
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
     #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px; }
     .seal-control-panel { background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #c00; margin-bottom: 20px; }
@@ -53,6 +46,7 @@
 
 <div class="control-panel">
   <div class="input-group"><label>公文標題</label><input type="text" id="input-title"></div>
+  <div class="input-group"><label>送達單位 (如：某某委員會)</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
   <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="4"></textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
   <div class="input-group"><label>署名</label><input type="text" id="input-name"></div>
@@ -66,6 +60,7 @@
   </div>
   <div class="paper-content">
     <div class="doc-title" id="show-title"></div>
+    <div class="doc-recipient" id="show-recipient"></div>
     <div class="doc-body" id="show-body"></div>
     <div class="doc-salutation" id="show-salutation"></div>
     <div class="signature-container">
@@ -78,8 +73,8 @@
 
 <div id="result-container">
   <div class="seal-control-panel">
-    <h3 style="margin-top:0;">第一步：檢查預覽</h3>
-    <p>如果內容無誤，請輸入密碼加蓋公章並重新生成最終圖片：</p>
+    <h3>第一步：檢查預覽</h3>
+    <p>內容無誤後，輸入密碼加蓋公章：</p>
     <div style="display:flex; gap:10px; justify-content:center;">
         <input type="password" id="seal-pw" placeholder="輸入蓋章密碼" style="width:200px;">
         <button onclick="applySealAndRegen()" style="padding:10px 20px; background:#c00; color:white; border:none; border-radius:4px; cursor:pointer;">加蓋公章</button>
@@ -95,30 +90,31 @@ function setCurrentDate() {
     document.getElementById('input-date').value = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 }
 
-// 1. 生成預覽 (不帶印章)
 async function generatePreview() {
-    document.getElementById('doc-seal').style.display = "none"; // 確保預覽時沒印章
+    document.getElementById('doc-seal').style.display = "none";
     updateCanvasText();
-    logToGAS(); // 預覽時即記錄一次
+    logToGAS();
     await captureCanvas("預覽圖片 (未蓋章)");
     document.getElementById('result-container').style.display = "block";
     document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
 }
 
-// 2. 驗證密碼並加蓋公章重新截圖
 async function applySealAndRegen() {
-    const pw = document.getElementById('seal-pw').value;
-    if (pw === "8888") { // 您可以修改此密碼
-        document.getElementById('doc-seal').style.display = "block"; // 顯示印章
+    if (document.getElementById('seal-pw').value === "8888") {
+        document.getElementById('doc-seal').style.display = "block";
         await captureCanvas("正式公文 (已蓋章)");
-        alert("公章加蓋成功！最終圖片已更新，請長按保存。");
+        alert("公章已加蓋！");
     } else {
-        alert("密碼錯誤，無法授權蓋章。");
+        alert("密碼錯誤。");
     }
 }
 
 function updateCanvasText() {
     document.getElementById('show-title').innerText = document.getElementById('input-title').value;
+    // 獲取並顯示送達單位，後加冒號
+    const rec = document.getElementById('input-recipient').value;
+    document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
+    
     document.getElementById('show-body').innerText = document.getElementById('input-content').value;
     document.getElementById('show-salutation').innerText = document.getElementById('input-salutation').value;
     document.getElementById('show-name').innerText = document.getElementById('input-name').value;
@@ -132,6 +128,7 @@ function logToGAS() {
       mode: "no-cors",
       body: JSON.stringify({ 
           title: document.getElementById('input-title').value, 
+          recipient: document.getElementById('input-recipient').value, // 傳送送達單位
           user: document.getElementById('input-name').value, 
           content: document.getElementById('input-content').value 
       })
