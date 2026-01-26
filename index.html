@@ -26,25 +26,46 @@
         overflow: hidden;
     }
 
-    #page-2 { display: none; } /* 初始隱藏，必要時顯示 */
+    #page-2 { display: none; }
 
     .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
     .header-img { width: 100%; display: block; }
     
-    .paper-content { padding: 40px 80px; position: relative; flex: 1; display: flex; flex-direction: column; }
+    .paper-content { 
+        padding: 40px 80px; 
+        position: relative; 
+        flex: 1; 
+        display: flex; 
+        flex-direction: column; 
+        width: 100%; 
+        box-sizing: border-box;
+    }
     
     .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 30px; line-height: 1.5; }
-    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; }
+    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-align: left; width: 100%; }
     
-    /* 正文容器：現在會動態填充段落 */
-    .body-container { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2.2em; margin-bottom: 0px; }
-    .doc-salutation { font-size: 20px; padding-left: 2em; margin-top: 20px; margin-bottom: 30px; }
+    .body-container { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 0px; text-align: left; width: 100%; }
     
-    .signature-container { align-self: flex-end; display: flex; flex-direction: column; align-items: center; min-width: 250px; position: relative; }
-    .sig-name { font-size: 22px; margin-bottom: 8px; z-index: 10; position: relative; }
-    .sig-date { font-size: 18px; z-index: 10; position: relative; }
+    .doc-salutation { font-size: 20px; padding-left: 2em; margin-top: 20px; margin-bottom: 30px; text-align: left; width: 100%; }
     
-    .doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
+    /* 落款容器：強制靠右，且內部文字不加粗 */
+    .signature-container { 
+        align-self: flex-end; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        text-align: center;
+        min-width: 280px;        
+        margin-right: 20px;
+        position: relative; 
+        margin-top: 10px;
+    }
+    
+    /* 取消加粗，保持正常字體重量 */
+    .sig-name { font-size: 24px; font-weight: normal; margin-bottom: 8px; z-index: 10; position: relative; }
+    .sig-date { font-size: 20px; font-weight: normal; z-index: 10; position: relative; }
+    
+    .doc-seal { display: none; position: absolute; width: 160px; height: 160px; top: -40px; left: 50%; transform: translateX(-50%); opacity: 0.85; z-index: 1; pointer-events: none; }
 
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
     #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px;}
@@ -56,7 +77,7 @@
 <div class="control-panel">
   <div class="input-group"><label>公文標題</label><input type="text" id="input-title" value="關於同鄉會年度大會的通知"></div>
   <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
-  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="10" placeholder="輸入正文內容，內容過長將自動分至第二頁並加紅頭..."></textarea></div>
+  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="10" placeholder="輸入正文內容..."></textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
   <div class="input-group"><label>署名</label><input type="text" id="input-name"></div>
   <div class="input-group"><label>日期</label><input type="text" id="input-date"></div>
@@ -71,7 +92,7 @@
       <div class="doc-title" id="show-title"></div>
       <div class="doc-recipient" id="show-recipient"></div>
       <div id="body-p1" class="body-container"></div>
-      <div id="footer-p1"></div> <!-- 存放此致和署名 -->
+      <div id="footer-p1" style="display: flex; flex-direction: column; width: 100%;"></div>
     </div>
   </div>
 
@@ -80,12 +101,12 @@
     <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
     <div class="paper-content">
       <div id="body-p2" class="body-container"></div>
-      <div id="footer-p2"></div>
+      <div id="footer-p2" style="display: flex; flex-direction: column; width: 100%;"></div>
     </div>
   </div>
 </div>
 
-<!-- 此致、署名、日期 模塊模板 (隱藏) -->
+<!-- 結尾模板 -->
 <div id="closing-template" style="display:none;">
     <div class="doc-salutation" id="show-salutation"></div>
     <div class="signature-container">
@@ -114,7 +135,6 @@ function setCurrentDate() {
 }
 
 async function generatePreview() {
-    // 1. 重置狀態
     const bodyP1 = document.getElementById('body-p1');
     const bodyP2 = document.getElementById('body-p2');
     const footerP1 = document.getElementById('footer-p1');
@@ -127,15 +147,14 @@ async function generatePreview() {
     footerP2.innerHTML = "";
     page2.style.display = "none";
 
-    // 2. 填充基本信息
     document.getElementById('show-title').innerText = document.getElementById('input-title').value;
     const rec = document.getElementById('input-recipient').value;
     document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
     
-    // 3. 分段填充正文並檢測高度
     const fullText = document.getElementById('input-content').value;
     const paragraphs = fullText.split('\n');
-    const maxHeight = 920; // 第一頁正文容納的安全高度
+    
+    const maxHeight = 920; 
     
     let targetBody = bodyP1;
     let targetFooter = footerP1;
@@ -143,39 +162,37 @@ async function generatePreview() {
 
     for (let pText of paragraphs) {
         if (!pText.trim() && pText !== "") continue; 
-        
         const pElem = document.createElement('div');
         pElem.style.marginBottom = "10px";
         pElem.innerText = pText;
-        
         targetBody.appendChild(pElem);
 
-        // 檢查高度是否溢出
-        if (!overflowed && bodyP1.offsetTop + bodyP1.offsetHeight > maxHeight) {
+        if (!overflowed && (bodyP1.offsetTop + bodyP1.offsetHeight) > maxHeight) {
             overflowed = true;
             page2.style.display = "flex";
             targetBody = bodyP2;
             targetFooter = footerP2;
-            // 將剛才那個溢出的段落移到第二頁
             targetBody.appendChild(pElem);
         }
     }
 
-    // 4. 填充此致、署名、日期
     const template = document.getElementById('closing-template').cloneNode(true);
-    template.style.display = "block";
+    template.style.display = "flex"; 
+    template.style.flexDirection = "column";
+    template.style.width = "100%";
+    
     template.querySelector('#show-salutation').innerText = document.getElementById('input-salutation').value;
     template.querySelector('#show-name').innerText = document.getElementById('input-name').value;
     template.querySelector('#show-date').innerText = document.getElementById('input-date').value;
     
-    // 檢查如果加上落款後第一頁是否會溢出
     targetFooter.appendChild(template);
-    if (!overflowed && (bodyP1.offsetTop + bodyP1.offsetHeight + footerP1.offsetHeight) > 950) {
+    
+    if (!overflowed && (bodyP1.offsetTop + bodyP1.offsetHeight + footerP1.offsetHeight) > 1000) {
         page2.style.display = "flex";
         footerP2.appendChild(template);
+        footerP1.innerHTML = ""; 
     }
 
-    // 5. 截圖
     setTimeout(async () => {
         await captureCanvas("預覽圖片 (未蓋章)");
         document.getElementById('result-container').style.display = "block";
