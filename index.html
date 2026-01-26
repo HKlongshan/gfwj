@@ -13,11 +13,11 @@
     label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
     input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
     .btn-main { background: #c00; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
-    
-    /* 画布区域：始终输出两页 */
-    #canvas-area { width: 794px; background: #e0e0e0; display: flex; flex-direction: column; gap: 0; }
+    .btn-main:disabled { background: #999; }
 
-    /* A4 页面样式 */
+    /* 画布区域 */
+    #canvas-area { width: 794px; display: flex; flex-direction: column; }
+
     .a4-page { 
         background: white; 
         width: 794px; 
@@ -26,35 +26,34 @@
         display: flex; 
         flex-direction: column; 
         position: relative; 
-        overflow: hidden; 
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-bottom: 0; /* 截图时无缝拼接 */
     }
 
-    .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
+    .header-wrapper { border-bottom: 2px solid #c00; width: 100%; }
     .header-img { width: 100%; display: block; }
     
-    .paper-content { padding: 40px 80px; flex: 1; display: flex; flex-direction: column; }
+    .paper-content { padding: 30px 80px; flex: 1; display: flex; flex-direction: column; position: relative; }
     
-    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 30px; line-height: 1.5; }
-    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-indent: 0; }
-    .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 20px; }
+    /* 样式与您原始设置保持一致 */
+    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 25px; line-height: 1.4; }
+    .doc-recipient { font-size: 20px; line-height: 1.6; margin-bottom: 10px; font-weight: bold; }
+    .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; text-align: justify; }
     
-    /* 落款容器：紧贴上文 */
+    /* 落款 */
     .signature-container { 
         align-self: flex-end; 
         display: flex; 
         flex-direction: column; 
         align-items: center; 
         min-width: 250px; 
-        position: relative; 
-        margin-top: 10px; 
+        margin-top: 20px; 
+        position: relative;
     }
-    .doc-salutation { font-size: 20px; align-self: flex-start; margin-bottom: 15px; padding-left: 2em; width: 100%; text-align: left; }
-    .sig-name { font-size: 22px; margin-bottom: 8px; z-index: 10; position: relative; }
-    .sig-date { font-size: 18px; z-index: 10; position: relative; }
-    
-    /* 印章 */
-    #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -30px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
+    .doc-salutation { font-size: 20px; align-self: flex-start; margin-bottom: 10px; padding-left: 2em; width: 100%; text-align: left; }
+    .sig-name { font-size: 22px; margin-bottom: 5px; position: relative; z-index: 10; }
+    .sig-date { font-size: 18px; position: relative; z-index: 10; }
+    #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 5; pointer-events: none; }
 
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
     #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px; }
@@ -64,11 +63,11 @@
 <body onload="setCurrentDate()">
 
 <div class="control-panel">
-  <div class="input-group"><label>公文標題</label><input type="text" id="input-title" value="通知"></div>
-  <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
-  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="6">请在此输入正文。如果正文较短，落款会自动跟在第一页。如果正文非常长，长到第一页放不下，落款才会自动出现在第二页。</textarea></div>
+  <div class="input-group"><label>公文標題</label><input type="text" id="input-title" value="關於同鄉會年度大會的通知"></div>
+  <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="諸位會員："></div>
+  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="8" placeholder="請輸入正文..."></textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
-  <div class="input-group"><label>署名</label><input type="text" id="input-name" value="阿斯蒂芬"></div>
+  <div class="input-group"><label>署名</label><input type="text" id="input-name" value="僑港順德龍山同鄉會"></div>
   <div class="input-group"><label>日期</label><input type="text" id="input-date"></div>
   <button id="main-btn" class="btn-main" onclick="generatePreview()">生成預覽並記錄</button>
 </div>
@@ -76,23 +75,24 @@
 <div id="canvas-area">
   <div class="a4-page" id="page-1">
     <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
-    <div class="paper-content" id="content-1">
+    <div class="paper-content">
       <div class="doc-title" id="show-title"></div>
       <div class="doc-recipient" id="show-recipient"></div>
-      <div class="doc-body" id="show-body"></div>
-      <div id="sig-holder-1"></div>
+      <div class="doc-body" id="show-body-1"></div>
+      <div id="holder-1"></div>
     </div>
   </div>
 
   <div class="a4-page" id="page-2">
     <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
-    <div class="paper-content" id="content-2">
-      <div id="sig-holder-2"></div>
+    <div class="paper-content">
+      <div class="doc-body" id="show-body-2"></div>
+      <div id="holder-2"></div>
     </div>
   </div>
 </div>
 
-<div id="master-signature" style="display:none;">
+<div id="sig-template" style="display:none;">
     <div class="signature-container">
         <div class="doc-salutation" id="show-salutation"></div>
         <img id="doc-seal" src="shizi.png">
@@ -119,50 +119,85 @@ function setCurrentDate() {
     document.getElementById('input-date').value = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 }
 
-function updateCanvasText() {
-    // 1. 同步文字
-    document.getElementById('show-title').innerText = document.getElementById('input-title').value;
-    const rec = document.getElementById('input-recipient').value;
-    document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
-    document.getElementById('show-body').innerText = document.getElementById('input-content').value;
-    document.getElementById('show-salutation').innerText = document.getElementById('input-salutation').value;
-    document.getElementById('show-name').innerText = document.getElementById('input-name').value;
-    document.getElementById('show-date').innerText = document.getElementById('input-date').value;
+// 核心邏輯：自動拆分文字到兩頁
+async function updateCanvasText() {
+    // 1. 初始化
+    const title = document.getElementById('input-title').value;
+    const recipient = document.getElementById('input-recipient').value;
+    const fullContent = document.getElementById('input-content').value;
+    const salutation = document.getElementById('input-salutation').value;
+    const name = document.getElementById('input-name').value;
+    const date = document.getElementById('input-date').value;
 
-    // 2. 动态逻辑：判断落款该去哪
-    const sigHolder1 = document.getElementById('sig-holder-1');
-    const sigHolder2 = document.getElementById('sig-holder-2');
-    const signature = document.getElementById('master-signature').firstElementChild;
-    const page1 = document.getElementById('page-1');
-    
-    // 先尝试放入第一页
-    sigHolder1.appendChild(signature);
-    
-    // 测量签名底部距离第一页顶部的距离
-    // getBoundingClientRect().bottom 是相对于视口的，我们需要减去 page1 的顶部位置
-    const page1Top = page1.getBoundingClientRect().top;
-    const sigBottom = signature.getBoundingClientRect().bottom;
-    const relativeBottom = sigBottom - page1Top;
+    document.getElementById('show-title').innerText = title;
+    document.getElementById('show-recipient').innerText = recipient ? recipient + "：" : "";
+    document.getElementById('show-salutation').innerText = salutation;
+    document.getElementById('show-name').innerText = name;
+    document.getElementById('show-date').innerText = date;
 
-    // A4 高度是 1123px，我们留出约 100px 的底边距
-    // 如果相对位置超过了 1020px，说明第一页挤不下了
-    if (relativeBottom > 1020) {
-        sigHolder2.appendChild(signature); // 移到第二页
+    const body1 = document.getElementById('show-body-1');
+    const body2 = document.getElementById('show-body-2');
+    const holder1 = document.getElementById('holder-1');
+    const holder2 = document.getElementById('holder-2');
+    const signature = document.getElementById('sig-template').firstElementChild;
+
+    body1.innerText = "";
+    body2.innerText = "";
+    holder1.innerHTML = "";
+    holder2.innerHTML = "";
+
+    // 2. 模擬填充第一頁，計算截斷點
+    const paragraphs = fullContent.split('\n');
+    let overflowed = false;
+    let page1Text = "";
+    let page2Text = "";
+
+    // 臨時放入簽名以計算高度
+    holder1.appendChild(signature);
+
+    for (let i = 0; i < paragraphs.length; i++) {
+        const testText = page1Text + (i > 0 ? '\n' : '') + paragraphs[i];
+        body1.innerText = testText;
+        
+        // 判斷第一頁是否溢出 (A4內容區高度約 900px，預留安全邊距)
+        if (document.getElementById('page-1').scrollHeight > 1120) {
+            overflowed = true;
+            page2Text = paragraphs.slice(i).join('\n');
+            // 回退到上一段的內容
+            body1.innerText = page1Text; 
+            break;
+        }
+        page1Text = testText;
+    }
+
+    if (overflowed) {
+        // 內容太多，去第二頁
+        body2.innerText = page2Text;
+        holder2.appendChild(signature);
     } else {
-        sigHolder1.appendChild(signature); // 留在第一页
+        // 第一頁放得下
+        holder1.appendChild(signature);
     }
 }
 
 async function generatePreview() {
+    const btn = document.getElementById('main-btn');
+    btn.disabled = true;
+    btn.innerText = "處理中...";
+    
     document.getElementById('doc-seal').style.display = "none";
-    updateCanvasText();
+    
+    await updateCanvasText();
     logToGAS();
-    // 延迟一下确保 DOM 渲染完成
+    
+    // 延遲確保瀏覽器完成排版渲染
     setTimeout(async () => {
         await captureCanvas("預覽圖片 (未蓋章)");
         document.getElementById('result-container').style.display = "block";
         document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+        btn.disabled = false;
+        btn.innerText = "生成預覽並記錄";
+    }, 300);
 }
 
 async function applySealAndRegen() {
@@ -193,7 +228,9 @@ async function captureCanvas(statusText) {
     const canvas = await html2canvas(document.querySelector("#canvas-area"), {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#e0e0e0"
+        backgroundColor: "#e0e0e0",
+        // 關鍵：確保截取所有頁面
+        height: document.querySelector("#canvas-area").offsetHeight
     });
     const img = document.getElementById('result-image');
     img.src = canvas.toDataURL("image/png");
