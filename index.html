@@ -13,11 +13,10 @@
     label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
     input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
     .btn-main { background: #c00; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
-    .btn-main:disabled { background: #999; }
-
-    /* 画布区域 */
-    #canvas-area { width: 794px; display: flex; flex-direction: column; }
-
+    
+    /* A4 畫布區 */
+    #canvas-wrapper { width: 794px; display: flex; flex-direction: column; gap: 0; }
+    
     .a4-page { 
         background: white; 
         width: 794px; 
@@ -27,36 +26,29 @@
         flex-direction: column; 
         position: relative; 
         overflow: hidden;
-        margin-bottom: 0; /* 截图时无缝拼接 */
     }
 
-    .header-wrapper { border-bottom: 2px solid #c00; width: 100%; }
+    /* 第二頁預設不顯示，除非內容溢出 */
+    #page-2 { display: none; margin-top: 0; border-top: 1px dashed #ccc; }
+
+    .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
     .header-img { width: 100%; display: block; }
     
-    .paper-content { padding: 30px 80px; flex: 1; display: flex; flex-direction: column; position: relative; }
+    .paper-content { padding: 40px 80px; position: relative; flex: 1; display: flex; flex-direction: column; }
     
-    /* 样式与您原始设置保持一致 */
-    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 25px; line-height: 1.4; }
-    .doc-recipient { font-size: 20px; line-height: 1.6; margin-bottom: 10px; font-weight: bold; }
-    .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; text-align: justify; }
+    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 30px; line-height: 1.5; }
+    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; }
+    .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 20px; }
+    .doc-salutation { font-size: 20px; padding-left: 2em; margin-bottom: 30px; }
     
-    /* 落款 */
-    .signature-container { 
-        align-self: flex-end; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        min-width: 250px; 
-        margin-top: 20px; 
-        position: relative;
-    }
-    .doc-salutation { font-size: 20px; align-self: flex-start; margin-bottom: 10px; padding-left: 2em; width: 100%; text-align: left; }
-    .sig-name { font-size: 22px; margin-bottom: 5px; position: relative; z-index: 10; }
-    .sig-date { font-size: 18px; position: relative; z-index: 10; }
-    #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 5; pointer-events: none; }
+    .signature-container { align-self: flex-end; display: flex; flex-direction: column; align-items: center; min-width: 250px; position: relative; }
+    .sig-name { font-size: 22px; margin-bottom: 8px; z-index: 10; position: relative; }
+    .sig-date { font-size: 18px; z-index: 10; position: relative; }
+    
+    .doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
 
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
-    #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px; }
+    #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     .seal-control-panel { background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #c00; margin-bottom: 20px; }
   </style>
 </head>
@@ -64,52 +56,53 @@
 
 <div class="control-panel">
   <div class="input-group"><label>公文標題</label><input type="text" id="input-title" value="關於同鄉會年度大會的通知"></div>
-  <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="諸位會員："></div>
-  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="8" placeholder="請輸入正文..."></textarea></div>
+  <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
+  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="8" placeholder="輸入正文..."></textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
-  <div class="input-group"><label>署名</label><input type="text" id="input-name" value="僑港順德龍山同鄉會"></div>
+  <div class="input-group"><label>署名</label><input type="text" id="input-name"></div>
   <div class="input-group"><label>日期</label><input type="text" id="input-date"></div>
   <button id="main-btn" class="btn-main" onclick="generatePreview()">生成預覽並記錄</button>
 </div>
 
-<div id="canvas-area">
+<div id="canvas-wrapper">
+  <!-- 第一頁 -->
   <div class="a4-page" id="page-1">
     <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
-    <div class="paper-content">
+    <div class="paper-content" id="content-1">
       <div class="doc-title" id="show-title"></div>
       <div class="doc-recipient" id="show-recipient"></div>
-      <div class="doc-body" id="show-body-1"></div>
-      <div id="holder-1"></div>
+      <div class="doc-body" id="show-body"></div>
+      <!-- 落款群組 -->
+      <div id="closing-group">
+        <div class="doc-salutation" id="show-salutation"></div>
+        <div class="signature-container">
+          <img class="doc-seal" src="shizi.png">
+          <div class="sig-name" id="show-name"></div>
+          <div class="sig-date" id="show-date"></div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- 第二頁 (預設隱藏) -->
   <div class="a4-page" id="page-2">
     <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
-    <div class="paper-content">
-      <div class="doc-body" id="show-body-2"></div>
-      <div id="holder-2"></div>
+    <div class="paper-content" id="content-2">
+        <!-- 溢出的落款會被搬到這裡 -->
     </div>
   </div>
-</div>
-
-<div id="sig-template" style="display:none;">
-    <div class="signature-container">
-        <div class="doc-salutation" id="show-salutation"></div>
-        <img id="doc-seal" src="shizi.png">
-        <div class="sig-name" id="show-name"></div>
-        <div class="sig-date" id="show-date"></div>
-    </div>
 </div>
 
 <div id="result-container">
   <div class="seal-control-panel">
     <h3>第一步：檢查預覽</h3>
+    <p>如果內容較多，系統已自動分至第二頁並補上紅頭抬頭。</p>
     <div style="display:flex; gap:10px; justify-content:center;">
         <input type="password" id="seal-pw" placeholder="輸入蓋章密碼" style="width:200px;">
         <button onclick="applySealAndRegen()" style="padding:10px 20px; background:#c00; color:white; border:none; border-radius:4px; cursor:pointer;">加蓋公章</button>
     </div>
   </div>
-  <h3 id="result-status-text">當前為：預覽圖片 (未蓋章)</h3>
+  <h3 id="result-status-text">預覽生成中...</h3>
   <img id="result-image">
 </div>
 
@@ -119,95 +112,76 @@ function setCurrentDate() {
     document.getElementById('input-date').value = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 }
 
-// 核心邏輯：自動拆分文字到兩頁
-async function updateCanvasText() {
-    // 1. 初始化
-    const title = document.getElementById('input-title').value;
-    const recipient = document.getElementById('input-recipient').value;
-    const fullContent = document.getElementById('input-content').value;
-    const salutation = document.getElementById('input-salutation').value;
-    const name = document.getElementById('input-name').value;
-    const date = document.getElementById('input-date').value;
-
-    document.getElementById('show-title').innerText = title;
-    document.getElementById('show-recipient').innerText = recipient ? recipient + "：" : "";
-    document.getElementById('show-salutation').innerText = salutation;
-    document.getElementById('show-name').innerText = name;
-    document.getElementById('show-date').innerText = date;
-
-    const body1 = document.getElementById('show-body-1');
-    const body2 = document.getElementById('show-body-2');
-    const holder1 = document.getElementById('holder-1');
-    const holder2 = document.getElementById('holder-2');
-    const signature = document.getElementById('sig-template').firstElementChild;
-
-    body1.innerText = "";
-    body2.innerText = "";
-    holder1.innerHTML = "";
-    holder2.innerHTML = "";
-
-    // 2. 模擬填充第一頁，計算截斷點
-    const paragraphs = fullContent.split('\n');
-    let overflowed = false;
-    let page1Text = "";
-    let page2Text = "";
-
-    // 臨時放入簽名以計算高度
-    holder1.appendChild(signature);
-
-    for (let i = 0; i < paragraphs.length; i++) {
-        const testText = page1Text + (i > 0 ? '\n' : '') + paragraphs[i];
-        body1.innerText = testText;
-        
-        // 判斷第一頁是否溢出 (A4內容區高度約 900px，預留安全邊距)
-        if (document.getElementById('page-1').scrollHeight > 1120) {
-            overflowed = true;
-            page2Text = paragraphs.slice(i).join('\n');
-            // 回退到上一段的內容
-            body1.innerText = page1Text; 
-            break;
-        }
-        page1Text = testText;
-    }
-
-    if (overflowed) {
-        // 內容太多，去第二頁
-        body2.innerText = page2Text;
-        holder2.appendChild(signature);
-    } else {
-        // 第一頁放得下
-        holder1.appendChild(signature);
-    }
+function updateCanvasText() {
+    document.getElementById('show-title').innerText = document.getElementById('input-title').value;
+    const rec = document.getElementById('input-recipient').value;
+    document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
+    document.getElementById('show-body').innerText = document.getElementById('input-content').value;
+    document.getElementById('show-salutation').innerText = document.getElementById('input-salutation').value;
+    document.getElementById('show-name').innerText = document.getElementById('input-name').value;
+    document.getElementById('show-date').innerText = document.getElementById('input-date').value;
+    
+    // 隱藏所有印章
+    document.querySelectorAll('.doc-seal').forEach(s => s.style.display = "none");
 }
 
 async function generatePreview() {
-    const btn = document.getElementById('main-btn');
-    btn.disabled = true;
-    btn.innerText = "處理中...";
+    // 1. 先把所有東西放回第一頁，隱藏第二頁
+    const closingGroup = document.getElementById('closing-group');
+    document.getElementById('content-1').appendChild(closingGroup);
+    document.getElementById('page-2').style.display = "none";
     
-    document.getElementById('doc-seal').style.display = "none";
-    
-    await updateCanvasText();
-    logToGAS();
-    
-    // 延遲確保瀏覽器完成排版渲染
+    updateCanvasText();
+
+    // 2. 等待 DOM 渲染後判斷高度
     setTimeout(async () => {
+        // 使用 offsetTop 判斷落款區塊相對於 content-1 頂部的距離
+        // A4 內容區高度大約 850px-900px
+        const triggerHeight = 820; 
+        const currentPos = closingGroup.offsetTop + closingGroup.offsetHeight;
+
+        if (currentPos > triggerHeight) {
+            // 溢出，搬運到第二頁
+            document.getElementById('page-2').style.display = "flex";
+            document.getElementById('content-2').appendChild(closingGroup);
+        }
+
+        // 3. 記錄到 GAS
+        logToGAS();
+
+        // 4. 生成圖片
         await captureCanvas("預覽圖片 (未蓋章)");
         document.getElementById('result-container').style.display = "block";
         document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
-        btn.disabled = false;
-        btn.innerText = "生成預覽並記錄";
     }, 300);
 }
 
 async function applySealAndRegen() {
     if (document.getElementById('seal-pw').value === "8888") {
-        document.getElementById('doc-seal').style.display = "block";
+        document.querySelectorAll('.doc-seal').forEach(s => s.style.display = "block");
         await captureCanvas("正式公文 (已蓋章)");
         alert("公章已加蓋！");
     } else {
         alert("密碼錯誤。");
     }
+}
+
+async function captureCanvas(statusText) {
+    const wrapper = document.querySelector("#canvas-wrapper");
+    // 獲取當前實際顯示的高度（如果只有一頁就是1123，兩頁就是2246）
+    const isTwoPages = document.getElementById('page-2').style.display === "flex";
+    const totalHeight = isTwoPages ? 2246 : 1123;
+
+    const canvas = await html2canvas(wrapper, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#e0e0e0",
+        height: totalHeight,
+        windowHeight: totalHeight
+    });
+    const img = document.getElementById('result-image');
+    img.src = canvas.toDataURL("image/png");
+    document.getElementById('result-status-text').innerText = "當前為：" + statusText;
 }
 
 function logToGAS() {
@@ -222,19 +196,6 @@ function logToGAS() {
           content: document.getElementById('input-content').value 
       })
     });
-}
-
-async function captureCanvas(statusText) {
-    const canvas = await html2canvas(document.querySelector("#canvas-area"), {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#e0e0e0",
-        // 關鍵：確保截取所有頁面
-        height: document.querySelector("#canvas-area").offsetHeight
-    });
-    const img = document.getElementById('result-image');
-    img.src = canvas.toDataURL("image/png");
-    document.getElementById('result-status-text').innerText = "當前為：" + statusText;
 }
 </script>
 </body>
