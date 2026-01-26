@@ -14,10 +14,10 @@
     input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
     .btn-main { background: #c00; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
     
-    /* 核心：双 A4 画布容器 */
+    /* 画布区域：始终输出两页 */
     #canvas-area { width: 794px; background: #e0e0e0; display: flex; flex-direction: column; gap: 0; }
 
-    /* 单个 A4 页面样式 */
+    /* A4 页面样式 */
     .a4-page { 
         background: white; 
         width: 794px; 
@@ -26,22 +26,20 @@
         display: flex; 
         flex-direction: column; 
         position: relative; 
-        overflow: hidden; /* 确保不产生奇怪的滚动条 */
+        overflow: hidden; 
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    /* Banner 样式保持不变 */
     .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
     .header-img { width: 100%; display: block; }
     
-    .paper-content { padding: 40px 80px; flex: 1; display: flex; flex-direction: column; position: relative; }
+    .paper-content { padding: 40px 80px; flex: 1; display: flex; flex-direction: column; }
     
-    /* 文字样式保持您的原始设定 */
-    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 40px; line-height: 1.5; }
-    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-indent: 0; position: relative; z-index: 5; }
-    .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 30px; position: relative; z-index: 5; }
-    .doc-salutation { font-size: 20px; padding-left: 2em; margin-bottom: 20px; position: relative; z-index: 5; }
+    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 30px; line-height: 1.5; }
+    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-indent: 0; }
+    .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 20px; }
     
-    /* 落款容器 */
+    /* 落款容器：紧贴上文 */
     .signature-container { 
         align-self: flex-end; 
         display: flex; 
@@ -49,16 +47,15 @@
         align-items: center; 
         min-width: 250px; 
         position: relative; 
-        margin-top: 20px; 
+        margin-top: 10px; 
     }
-    .sig-name, .sig-date { position: relative; z-index: 10; font-weight: normal; } 
-    .sig-name { font-size: 22px; margin-bottom: 8px; }
-    .sig-date { font-size: 18px; }
+    .doc-salutation { font-size: 20px; align-self: flex-start; margin-bottom: 15px; padding-left: 2em; width: 100%; text-align: left; }
+    .sig-name { font-size: 22px; margin-bottom: 8px; z-index: 10; position: relative; }
+    .sig-date { font-size: 18px; z-index: 10; position: relative; }
     
     /* 印章 */
-    #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
+    #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -30px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
 
-    /* 结果显示 */
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
     #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px; }
     .seal-control-panel { background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #c00; margin-bottom: 20px; }
@@ -67,11 +64,11 @@
 <body onload="setCurrentDate()">
 
 <div class="control-panel">
-  <div class="input-group"><label>公文標題</label><input type="text" id="input-title"></div>
+  <div class="input-group"><label>公文標題</label><input type="text" id="input-title" value="通知"></div>
   <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
-  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="6"></textarea></div>
+  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="6">请在此输入正文。如果正文较短，落款会自动跟在第一页。如果正文非常长，长到第一页放不下，落款才会自动出现在第二页。</textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
-  <div class="input-group"><label>署名</label><input type="text" id="input-name"></div>
+  <div class="input-group"><label>署名</label><input type="text" id="input-name" value="阿斯蒂芬"></div>
   <div class="input-group"><label>日期</label><input type="text" id="input-date"></div>
   <button id="main-btn" class="btn-main" onclick="generatePreview()">生成預覽並記錄</button>
 </div>
@@ -107,7 +104,6 @@
 <div id="result-container">
   <div class="seal-control-panel">
     <h3>第一步：檢查預覽</h3>
-    <p>內容無誤後，輸入密碼加蓋公章：</p>
     <div style="display:flex; gap:10px; justify-content:center;">
         <input type="password" id="seal-pw" placeholder="輸入蓋章密碼" style="width:200px;">
         <button onclick="applySealAndRegen()" style="padding:10px 20px; background:#c00; color:white; border:none; border-radius:4px; cursor:pointer;">加蓋公章</button>
@@ -124,6 +120,7 @@ function setCurrentDate() {
 }
 
 function updateCanvasText() {
+    // 1. 同步文字
     document.getElementById('show-title').innerText = document.getElementById('input-title').value;
     const rec = document.getElementById('input-recipient').value;
     document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
@@ -132,23 +129,27 @@ function updateCanvasText() {
     document.getElementById('show-name').innerText = document.getElementById('input-name').value;
     document.getElementById('show-date').innerText = document.getElementById('input-date').value;
 
-    // 关键逻辑：判断高度并分配落款位置
-    const content1 = document.getElementById('content-1');
+    // 2. 动态逻辑：判断落款该去哪
     const sigHolder1 = document.getElementById('sig-holder-1');
     const sigHolder2 = document.getElementById('sig-holder-2');
     const signature = document.getElementById('master-signature').firstElementChild;
+    const page1 = document.getElementById('page-1');
     
-    // 暂时先放回第一页，测量总高度
+    // 先尝试放入第一页
     sigHolder1.appendChild(signature);
     
-    // 如果正文 + 标题 + 署名的高度 超过了 A4 纸张的可视高度 (约 900px)
-    // 我们预留一点余量，这里设定阈值为 850px
-    if (content1.scrollHeight > 880) {
-        // 第一页太挤了，把落款移到第二页
-        sigHolder2.appendChild(signature);
+    // 测量签名底部距离第一页顶部的距离
+    // getBoundingClientRect().bottom 是相对于视口的，我们需要减去 page1 的顶部位置
+    const page1Top = page1.getBoundingClientRect().top;
+    const sigBottom = signature.getBoundingClientRect().bottom;
+    const relativeBottom = sigBottom - page1Top;
+
+    // A4 高度是 1123px，我们留出约 100px 的底边距
+    // 如果相对位置超过了 1020px，说明第一页挤不下了
+    if (relativeBottom > 1020) {
+        sigHolder2.appendChild(signature); // 移到第二页
     } else {
-        // 第一页放得下，落款留在第一页
-        sigHolder1.appendChild(signature);
+        sigHolder1.appendChild(signature); // 留在第一页
     }
 }
 
@@ -156,9 +157,12 @@ async function generatePreview() {
     document.getElementById('doc-seal').style.display = "none";
     updateCanvasText();
     logToGAS();
-    await captureCanvas("預覽圖片 (未蓋章)");
-    document.getElementById('result-container').style.display = "block";
-    document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
+    // 延迟一下确保 DOM 渲染完成
+    setTimeout(async () => {
+        await captureCanvas("預覽圖片 (未蓋章)");
+        document.getElementById('result-container').style.display = "block";
+        document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
 }
 
 async function applySealAndRegen() {
@@ -186,7 +190,6 @@ function logToGAS() {
 }
 
 async function captureCanvas(statusText) {
-    // 捕获整个双页容器
     const canvas = await html2canvas(document.querySelector("#canvas-area"), {
         scale: 2,
         useCORS: true,
