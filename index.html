@@ -14,53 +14,51 @@
     input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
     .btn-main { background: #c00; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
     
-    /* A4 畫布核心修改區 */
-    #canvas-area { 
+    /* 核心：双 A4 画布容器 */
+    #canvas-area { width: 794px; background: #e0e0e0; display: flex; flex-direction: column; gap: 0; }
+
+    /* 单个 A4 页面样式 */
+    .a4-page { 
         background: white; 
         width: 794px; 
-        /* 关键修改：将 height: 1123px 改为 min-height，并允许 auto */
-        min-height: 1123px; 
-        height: auto; 
+        height: 1123px; 
         box-sizing: border-box; 
         display: flex; 
         flex-direction: column; 
         position: relative; 
-        /* 确保内容溢出时不会被切断 */
-        overflow: visible; 
+        overflow: hidden; /* 确保不产生奇怪的滚动条 */
     }
 
+    /* Banner 样式保持不变 */
     .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
     .header-img { width: 100%; display: block; }
     
-    /* 保持原来的 Flex 布局，让内容自然堆叠 */
-    .paper-content { padding: 40px 80px; flex: 1; display: flex; flex-direction: column; }
+    .paper-content { padding: 40px 80px; flex: 1; display: flex; flex-direction: column; position: relative; }
     
+    /* 文字样式保持您的原始设定 */
     .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 40px; line-height: 1.5; }
-    
     .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-indent: 0; position: relative; z-index: 5; }
-    
     .doc-body { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 30px; position: relative; z-index: 5; }
     .doc-salutation { font-size: 20px; padding-left: 2em; margin-bottom: 20px; position: relative; z-index: 5; }
     
-    /* 落款樣式 - 保持你的设计，自然对其到右侧 */
+    /* 落款容器 */
     .signature-container { 
-        align-self: flex-end; /* 靠右对齐 */
+        align-self: flex-end; 
         display: flex; 
         flex-direction: column; 
         align-items: center; 
         min-width: 250px; 
         position: relative; 
         margin-top: 20px; 
-        /* 不加 margin-top: auto，这样它就会紧贴上面的内容，而不是强制沉底 */
     }
-
     .sig-name, .sig-date { position: relative; z-index: 10; font-weight: normal; } 
     .sig-name { font-size: 22px; margin-bottom: 8px; }
     .sig-date { font-size: 18px; }
     
-    /* 印章層級 */
+    /* 印章 */
     #doc-seal { display: none; position: absolute; width: 150px; height: 150px; top: -35px; left: 50%; transform: translateX(-50%); opacity: 0.9; z-index: 1; pointer-events: none; }
 
+    /* 结果显示 */
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
     #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px; }
     .seal-control-panel { background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #c00; margin-bottom: 20px; }
@@ -70,8 +68,8 @@
 
 <div class="control-panel">
   <div class="input-group"><label>公文標題</label><input type="text" id="input-title"></div>
-  <div class="input-group"><label>送達單位 (如：某某委員會)</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
-  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="4"></textarea></div>
+  <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
+  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="6"></textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
   <div class="input-group"><label>署名</label><input type="text" id="input-name"></div>
   <div class="input-group"><label>日期</label><input type="text" id="input-date"></div>
@@ -79,21 +77,31 @@
 </div>
 
 <div id="canvas-area">
-  <div class="header-wrapper">
-    <img class="header-img" src="banner.jpg">
-  </div>
-  <div class="paper-content">
-    <div class="doc-title" id="show-title"></div>
-    <div class="doc-recipient" id="show-recipient"></div>
-    <div class="doc-body" id="show-body"></div>
-    <div class="doc-salutation" id="show-salutation"></div>
-    
-    <div class="signature-container">
-      <img id="doc-seal" src="shizi.png">
-      <div class="sig-name" id="show-name"></div>
-      <div class="sig-date" id="show-date"></div>
+  <div class="a4-page" id="page-1">
+    <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
+    <div class="paper-content" id="content-1">
+      <div class="doc-title" id="show-title"></div>
+      <div class="doc-recipient" id="show-recipient"></div>
+      <div class="doc-body" id="show-body"></div>
+      <div id="sig-holder-1"></div>
     </div>
   </div>
+
+  <div class="a4-page" id="page-2">
+    <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
+    <div class="paper-content" id="content-2">
+      <div id="sig-holder-2"></div>
+    </div>
+  </div>
+</div>
+
+<div id="master-signature" style="display:none;">
+    <div class="signature-container">
+        <div class="doc-salutation" id="show-salutation"></div>
+        <img id="doc-seal" src="shizi.png">
+        <div class="sig-name" id="show-name"></div>
+        <div class="sig-date" id="show-date"></div>
+    </div>
 </div>
 
 <div id="result-container">
@@ -115,6 +123,35 @@ function setCurrentDate() {
     document.getElementById('input-date').value = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 }
 
+function updateCanvasText() {
+    document.getElementById('show-title').innerText = document.getElementById('input-title').value;
+    const rec = document.getElementById('input-recipient').value;
+    document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
+    document.getElementById('show-body').innerText = document.getElementById('input-content').value;
+    document.getElementById('show-salutation').innerText = document.getElementById('input-salutation').value;
+    document.getElementById('show-name').innerText = document.getElementById('input-name').value;
+    document.getElementById('show-date').innerText = document.getElementById('input-date').value;
+
+    // 关键逻辑：判断高度并分配落款位置
+    const content1 = document.getElementById('content-1');
+    const sigHolder1 = document.getElementById('sig-holder-1');
+    const sigHolder2 = document.getElementById('sig-holder-2');
+    const signature = document.getElementById('master-signature').firstElementChild;
+    
+    // 暂时先放回第一页，测量总高度
+    sigHolder1.appendChild(signature);
+    
+    // 如果正文 + 标题 + 署名的高度 超过了 A4 纸张的可视高度 (约 900px)
+    // 我们预留一点余量，这里设定阈值为 850px
+    if (content1.scrollHeight > 880) {
+        // 第一页太挤了，把落款移到第二页
+        sigHolder2.appendChild(signature);
+    } else {
+        // 第一页放得下，落款留在第一页
+        sigHolder1.appendChild(signature);
+    }
+}
+
 async function generatePreview() {
     document.getElementById('doc-seal').style.display = "none";
     updateCanvasText();
@@ -134,20 +171,7 @@ async function applySealAndRegen() {
     }
 }
 
-function updateCanvasText() {
-    document.getElementById('show-title').innerText = document.getElementById('input-title').value;
-    // 獲取並顯示送達單位，後加冒號
-    const rec = document.getElementById('input-recipient').value;
-    document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
-    
-    document.getElementById('show-body').innerText = document.getElementById('input-content').value;
-    document.getElementById('show-salutation').innerText = document.getElementById('input-salutation').value;
-    document.getElementById('show-name').innerText = document.getElementById('input-name').value;
-    document.getElementById('show-date').innerText = document.getElementById('input-date').value;
-}
-
 function logToGAS() {
-    // 这里的 URL 是之前代码中的，保持不变
     const gas_url = "https://script.google.com/macros/s/AKfycbwRu5P74s_0LMbIB8u6qo04bX-NGGsGa9l2pc32xz4o16DgDq7RxIYXAGlfTkqbzO_8/exec"; 
     fetch(gas_url, {
       method: "POST",
@@ -162,11 +186,11 @@ function logToGAS() {
 }
 
 async function captureCanvas(statusText) {
-    // 自动调整截图高度
+    // 捕获整个双页容器
     const canvas = await html2canvas(document.querySelector("#canvas-area"), {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#e0e0e0"
     });
     const img = document.getElementById('result-image');
     img.src = canvas.toDataURL("image/png");
