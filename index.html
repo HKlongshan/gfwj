@@ -26,29 +26,19 @@
         overflow: hidden;
     }
 
-    #page-2 { display: none; }
+    #page-2 { display: none; margin-top: 10px; }
 
     .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
     .header-img { width: 100%; display: block; }
     
-    .paper-content { 
-        padding: 40px 80px; 
-        position: relative; 
-        flex: 1; 
-        display: flex; 
-        flex-direction: column; 
-        width: 100%; 
-        box-sizing: border-box;
-    }
+    .paper-content { padding: 40px 80px; position: relative; flex: 1; display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
     
     .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 30px; line-height: 1.5; }
     .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-align: left; width: 100%; }
     
     .body-container { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 0px; text-align: left; width: 100%; }
-    
     .doc-salutation { font-size: 20px; padding-left: 2em; margin-top: 20px; margin-bottom: 30px; text-align: left; width: 100%; }
     
-    /* 落款容器：強制靠右，且內部文字不加粗 */
     .signature-container { 
         align-self: flex-end; 
         display: flex; 
@@ -61,21 +51,23 @@
         margin-top: 10px;
     }
     
-    /* 取消加粗，保持正常字體重量 */
     .sig-name { font-size: 24px; font-weight: normal; margin-bottom: 8px; z-index: 10; position: relative; }
     .sig-date { font-size: 20px; font-weight: normal; z-index: 10; position: relative; }
     
     .doc-seal { display: none; position: absolute; width: 160px; height: 160px; top: -40px; left: 50%; transform: translateX(-50%); opacity: 0.85; z-index: 1; pointer-events: none; }
 
+    /* 結果展示區優化 */
     #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
-    #result-image { width: 100%; border: 1px solid #999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-top: 20px;}
+    .result-item { background: #fff; padding: 15px; border-radius: 8px; margin-top: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .result-label { background: #c00; color: #fff; padding: 5px 15px; border-radius: 20px; display: inline-block; margin-bottom: 10px; font-weight: bold; }
+    .result-img { width: 100%; border: 1px solid #ddd; }
     .seal-control-panel { background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #c00; margin-bottom: 20px; }
   </style>
 </head>
 <body onload="setCurrentDate()">
 
 <div class="control-panel">
-  <div class="input-group"><label>公文標題</label><input type="text" id="input-title" placeholder="通知主题"></div>
+  <div class="input-group"><label>公文標題</label><input type="text" id="input-title" value="關於同鄉會年度大會的通知"></div>
   <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
   <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="10" placeholder="輸入正文內容..."></textarea></div>
   <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
@@ -106,7 +98,7 @@
   </div>
 </div>
 
-<!-- 結尾模板 -->
+<!-- 模板 -->
 <div id="closing-template" style="display:none;">
     <div class="doc-salutation" id="show-salutation"></div>
     <div class="signature-container">
@@ -124,8 +116,10 @@
         <button onclick="applySealAndRegen()" style="padding:10px 20px; background:#c00; color:white; border:none; border-radius:4px; cursor:pointer;">加蓋公章</button>
     </div>
   </div>
-  <h3 id="result-status-text">預覽生成中...</h3>
-  <img id="result-image">
+  <h3 id="result-status-text">當前為：預覽圖片 (未蓋章)</h3>
+  <div id="result-images-list">
+      <!-- 圖片將在這裡動態生成 -->
+  </div>
 </div>
 
 <script>
@@ -155,7 +149,6 @@ async function generatePreview() {
     const paragraphs = fullText.split('\n');
     
     const maxHeight = 920; 
-    
     let targetBody = bodyP1;
     let targetFooter = footerP1;
     let overflowed = false;
@@ -180,7 +173,6 @@ async function generatePreview() {
     template.style.display = "flex"; 
     template.style.flexDirection = "column";
     template.style.width = "100%";
-    
     template.querySelector('#show-salutation').innerText = document.getElementById('input-salutation').value;
     template.querySelector('#show-name').innerText = document.getElementById('input-name').value;
     template.querySelector('#show-date').innerText = document.getElementById('input-date').value;
@@ -194,7 +186,7 @@ async function generatePreview() {
     }
 
     setTimeout(async () => {
-        await captureCanvas("預覽圖片 (未蓋章)");
+        await captureAllPages("預覽圖片 (未蓋章)");
         document.getElementById('result-container').style.display = "block";
         document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
         logToGAS();
@@ -204,27 +196,48 @@ async function generatePreview() {
 async function applySealAndRegen() {
     if (document.getElementById('seal-pw').value === "8888") {
         document.querySelectorAll('.doc-seal').forEach(s => s.style.display = "block");
-        await captureCanvas("正式公文 (已蓋章)");
+        await captureAllPages("正式公文 (已蓋章)");
         alert("公章已加蓋！");
     } else {
         alert("密碼錯誤。");
     }
 }
 
-async function captureCanvas(statusText) {
-    const wrapper = document.querySelector("#canvas-wrapper");
-    const isTwoPages = document.getElementById('page-2').style.display === "flex";
-    const totalHeight = isTwoPages ? 2246 : 1123;
-
-    const canvas = await html2canvas(wrapper, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#e0e0e0",
-        height: totalHeight
-    });
-    const img = document.getElementById('result-image');
-    img.src = canvas.toDataURL("image/png");
+// 核心修改：分開捕捉每一頁
+async function captureAllPages(statusText) {
+    const listContainer = document.getElementById('result-images-list');
+    listContainer.innerHTML = ""; // 清空舊的
     document.getElementById('result-status-text').innerText = "當前為：" + statusText;
+
+    const pages = [document.getElementById('page-1')];
+    if (document.getElementById('page-2').style.display === "flex") {
+        pages.push(document.getElementById('page-2'));
+    }
+
+    for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            width: 794,
+            height: 1123
+        });
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = "result-item";
+        
+        const label = document.createElement('div');
+        label.className = "result-label";
+        label.innerText = (i === 0) ? "公告正面" : "公告背面";
+        
+        const img = document.createElement('img');
+        img.className = "result-img";
+        img.src = canvas.toDataURL("image/png");
+
+        itemDiv.appendChild(label);
+        itemDiv.appendChild(img);
+        listContainer.appendChild(itemDiv);
+    }
 }
 
 function logToGAS() {
