@@ -2,257 +2,561 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <title>僑港順德龍山同鄉會 - 智能發文系統</title>
+  <title>僑港順德龍山同鄉會 - 公文生成系統</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body { font-family: "Microsoft YaHei", sans-serif; background: #e0e0e0; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: "Microsoft YaHei", "SimSun", sans-serif; 
+      background: #e0e0e0; 
+      margin: 0; 
+      padding: 20px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+    }
     
-    .control-panel { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 794px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); box-sizing: border-box; }
-    .input-group { margin-bottom: 12px; }
-    label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
-    input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
-    .btn-main { background: #c00; color: white; border: none; padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+    .control-panel { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      width: 100%; 
+      max-width: 794px; 
+      margin-bottom: 20px; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+    }
     
-    #canvas-wrapper { width: 794px; display: flex; flex-direction: column; }
+    .input-group { margin-bottom: 15px; }
+    label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 20px; }
+    input, textarea { 
+      width: 100%; 
+      padding: 10px; 
+      border: 1px solid #ccc; 
+      border-radius: 4px; 
+      font-size: 14px; 
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+    textarea { resize: vertical; }
     
+    .btn-main { 
+      background: #c00; 
+      color: white; 
+      border: none; 
+      padding: 15px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      width: 100%; 
+      font-size: 16px; 
+      font-weight: bold; 
+      transition: background 0.3s;
+    }
+    .btn-main:hover { background: #a00; }
+    .btn-main:disabled { background: #999; cursor: not-allowed; }
+    
+    /* 隐藏的渲染区域 */
+    #render-area {
+      position: fixed;
+      left: -9999px;
+      top: -9999px;
+    }
+    
+    /* A4纸样式 */
     .a4-page { 
-        background: white; 
-        width: 794px; 
-        height: 1123px; 
-        box-sizing: border-box; 
-        display: flex; 
-        flex-direction: column; 
-        position: relative; 
-        overflow: hidden;
+      background: white; 
+      width: 794px; 
+      height: 1123px; 
+      display: flex; 
+      flex-direction: column; 
+      position: relative; 
+      overflow: hidden;
+      margin-bottom: 10px;
     }
 
-    #page-2 { display: none; margin-top: 10px; }
-
-    .header-wrapper { border-bottom: 2px solid #c00; width: 100%; margin-bottom: 5px; }
-    .header-img { width: 100%; display: block; }
+    .header-wrapper { 
+      border-bottom: 2px solid #c00; 
+      width: 100%; 
+    }
     
-    .paper-content { padding: 40px 80px; position: relative; flex: 1; display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
+    .header-img { 
+      width: 100%; 
+      display: block;
+    }
     
-    .doc-title { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 30px; line-height: 1.5; }
-    .doc-recipient { font-size: 20px; line-height: 1.8; margin-bottom: 10px; text-align: left; width: 100%; }
+    .paper-content { 
+      padding: 40px 80px; 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column;
+    }
     
-    .body-container { font-size: 20px; line-height: 1.8; white-space: pre-wrap; text-indent: 2em; margin-bottom: 0px; text-align: left; width: 100%; }
-    .doc-salutation { font-size: 20px; padding-left: 2em; margin-top: 20px; margin-bottom: 30px; text-align: left; width: 100%; }
+    .doc-title { 
+      font-size: 32px; 
+      font-weight: bold; 
+      text-align: center; 
+      margin-bottom: 30px; 
+      line-height: 1.5; 
+    }
+    
+    .doc-recipient { 
+      font-size: 20px; 
+      line-height: 1.8; 
+      margin-bottom: 10px; 
+      text-align: left; 
+    }
+    
+    .body-container { 
+      font-size: 20px; 
+      line-height: 1.8; 
+      text-indent: 2em; 
+      text-align: left; 
+    }
+    
+    .body-container p {
+      margin-bottom: 10px;
+      text-indent: 2em;
+      margin-top: 0;
+    }
+    
+    .doc-salutation { 
+      font-size: 20px; 
+      padding-left: 6em; 
+      margin-top: 30px; 
+      margin-bottom: 30px; 
+      text-align: left; 
+    }
+    
+    .signature-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+      margin-bottom: 40px;
+      padding-right: 40px;
+    }
     
     .signature-container { 
-        align-self: flex-end; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        text-align: center;
-        min-width: 280px;        
-        margin-right: 20px;
-        position: relative; 
-        margin-top: 10px;
+      display: inline-flex; 
+      flex-direction: column; 
+      align-items: center;
+      text-align: center;
     }
     
-    .sig-name { font-size: 24px; font-weight: normal; margin-bottom: 8px; z-index: 10; position: relative; }
-    .sig-date { font-size: 20px; font-weight: normal; z-index: 10; position: relative; }
+    .sig-name { 
+      font-size: 24px; 
+      margin-bottom: 8px; 
+      white-space: nowrap;
+    }
     
-    .doc-seal { display: none; position: absolute; width: 160px; height: 160px; top: -40px; left: 50%; transform: translateX(-50%); opacity: 0.85; z-index: 1; pointer-events: none; }
+    .sig-date { 
+      font-size: 20px; 
+      white-space: nowrap;
+    }
 
-    /* 結果展示區優化 */
-    #result-container { margin-top: 30px; text-align: center; display: none; padding-bottom: 100px; width: 100%; max-width: 794px; }
-    .result-item { background: #fff; padding: 15px; border-radius: 8px; margin-top: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .result-label { background: #c00; color: #fff; padding: 5px 15px; border-radius: 20px; display: inline-block; margin-bottom: 10px; font-weight: bold; }
-    .result-img { width: 100%; border: 1px solid #ddd; }
-    .seal-control-panel { background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #c00; margin-bottom: 20px; }
+    /* 结果展示 */
+    #result-container { 
+      margin-top: 30px; 
+      text-align: center; 
+      display: none; 
+      width: 100%; 
+      max-width: 794px; 
+      padding-bottom: 50px;
+    }
+    
+    .result-wrapper {
+      background: #fff; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    
+    .result-label {
+      background: #c00;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    
+    .result-img { 
+      width: 100%; 
+      border: 1px solid #ddd; 
+      margin-bottom: 15px;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
-<body onload="setCurrentDate()">
+<body>
 
 <div class="control-panel">
-  <div class="input-group"><label>公文標題</label><input type="text" id="input-title" placeholder="公文標題"></div>
-  <div class="input-group"><label>送達單位</label><input type="text" id="input-recipient" placeholder="請輸入收件方名稱"></div>
-  <div class="input-group"><label>正文內容</label><textarea id="input-content" rows="10" placeholder="輸入正文內容..."></textarea></div>
-  <div class="input-group"><label>敬語</label><input type="text" id="input-salutation" value="此致"></div>
-  <div class="input-group"><label>署名</label><input type="text" id="input-name"></div>
-  <div class="input-group"><label>日期</label><input type="text" id="input-date"></div>
-  <button class="btn-main" onclick="generatePreview()">生成預覽並記錄</button>
+  <h2 style="margin-top:0;color:#c00;text-align:center;">公文生成系統</h2>
+  
+  <div class="input-group">
+    <label>公文標題</label>
+    <input type="text" id="input-title" placeholder="請輸入公文標題">
+  </div>
+  
+  <div class="input-group">
+    <label>送達單位</label>
+    <input type="text" id="input-recipient" placeholder="請輸入收件方名稱">
+  </div>
+  
+  <div class="input-group">
+    <label>正文內容</label>
+    <textarea id="input-content" rows="10" placeholder="請輸入正文內容..."></textarea>
+  </div>
+  
+  <div class="input-group">
+    <label>敬語</label>
+    <input type="text" id="input-salutation" value="此致">
+  </div>
+  
+  <div class="input-group">
+    <label>署名</label>
+    <input type="text" id="input-name" placeholder="請輸入署名">
+  </div>
+  
+  <div class="input-group">
+    <label>日期</label>
+    <input type="text" id="input-date">
+  </div>
+  
+  <button class="btn-main" onclick="generateDocument()" id="generateBtn">
+    生成公文
+  </button>
 </div>
 
-<div id="canvas-wrapper">
-  <!-- 第一頁 -->
-  <div class="a4-page" id="page-1">
-    <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
-    <div class="paper-content" id="main-content-1">
-      <div class="doc-title" id="show-title"></div>
-      <div class="doc-recipient" id="show-recipient"></div>
-      <div id="body-p1" class="body-container"></div>
-      <div id="footer-p1" style="display: flex; flex-direction: column; width: 100%;"></div>
-    </div>
-  </div>
+<!-- 隐藏的渲染区域 - 动态生成页面 -->
+<div id="render-area"></div>
 
-  <!-- 第二頁 -->
-  <div class="a4-page" id="page-2">
-    <div class="header-wrapper"><img class="header-img" src="banner.jpg"></div>
-    <div class="paper-content">
-      <div id="body-p2" class="body-container"></div>
-      <div id="footer-p2" style="display: flex; flex-direction: column; width: 100%;"></div>
-    </div>
-  </div>
-</div>
-
-<!-- 模板 -->
+<!-- 落款模板 -->
 <div id="closing-template" style="display:none;">
-    <div class="doc-salutation" id="show-salutation"></div>
-    <div class="signature-container">
-      <img class="doc-seal" src="shizi.png">
-      <div class="sig-name" id="show-name"></div>
-      <div class="sig-date" id="show-date"></div>
-    </div>
+  <div class="doc-salutation"></div>
+  <div class="signature-container">
+    <div class="sig-name"></div>
+    <div class="sig-date"></div>
+  </div>
 </div>
 
+<!-- 结果展示 -->
 <div id="result-container">
-  <div class="seal-control-panel">
-    <h3>第一步：檢查預覽</h3>
-    <div style="display:flex; gap:10px; justify-content:center;">
-        <input type="password" id="seal-pw" placeholder="輸入蓋章密碼" style="width:200px;">
-        <button onclick="applySealAndRegen()" style="padding:10px 20px; background:#c00; color:white; border:none; border-radius:4px; cursor:pointer;">加蓋公章</button>
-    </div>
+  <div style="background:#c00;color:white;padding:15px;border-radius:8px 8px 0 0;margin-bottom:10px;text-align:center;">
+    <strong>公文生成完成！</strong><br>
+    <small>長按圖片即可保存到相冊</small>
   </div>
-  <h3 id="result-status-text">當前為：預覽圖片 (未蓋章)</h3>
-  <div id="result-images-list">
-      <!-- 圖片將在這裡動態生成 -->
-  </div>
+  <div id="result-images-list"></div>
 </div>
 
 <script>
+// 页面加载时设置当前日期
+window.onload = function() {
+  setCurrentDate();
+  loadFromStorage();
+};
+
 function setCurrentDate() {
-    const now = new Date();
-    document.getElementById('input-date').value = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  const now = new Date();
+  document.getElementById('input-date').value = 
+    `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 }
 
-async function generatePreview() {
-    const bodyP1 = document.getElementById('body-p1');
-    const bodyP2 = document.getElementById('body-p2');
-    const footerP1 = document.getElementById('footer-p1');
-    const footerP2 = document.getElementById('footer-p2');
-    const page2 = document.getElementById('page-2');
-    
-    bodyP1.innerHTML = "";
-    bodyP2.innerHTML = "";
-    footerP1.innerHTML = "";
-    footerP2.innerHTML = "";
-    page2.style.display = "none";
+// 自动保存到本地存储
+function saveToStorage() {
+  const data = {
+    title: document.getElementById('input-title').value,
+    recipient: document.getElementById('input-recipient').value,
+    content: document.getElementById('input-content').value,
+    salutation: document.getElementById('input-salutation').value,
+    name: document.getElementById('input-name').value,
+    date: document.getElementById('input-date').value
+  };
+  localStorage.setItem('documentData', JSON.stringify(data));
+}
 
-    document.getElementById('show-title').innerText = document.getElementById('input-title').value;
-    const rec = document.getElementById('input-recipient').value;
-    document.getElementById('show-recipient').innerText = rec ? rec + "：" : "";
-    
-    const fullText = document.getElementById('input-content').value;
-    const paragraphs = fullText.split('\n');
-    
-    const maxHeight = 920; 
-    let targetBody = bodyP1;
-    let targetFooter = footerP1;
-    let overflowed = false;
+// 从本地存储恢复
+function loadFromStorage() {
+  const saved = localStorage.getItem('documentData');
+  if (saved) {
+    const data = JSON.parse(saved);
+    document.getElementById('input-title').value = data.title || '';
+    document.getElementById('input-recipient').value = data.recipient || '';
+    document.getElementById('input-content').value = data.content || '';
+    document.getElementById('input-salutation').value = data.salutation || '此致';
+    document.getElementById('input-name').value = data.name || '';
+    document.getElementById('input-date').value = data.date || '';
+  }
+}
 
-    for (let pText of paragraphs) {
-        if (!pText.trim() && pText !== "") continue; 
-        const pElem = document.createElement('div');
-        pElem.style.marginBottom = "10px";
-        pElem.innerText = pText;
-        targetBody.appendChild(pElem);
+// 监听输入变化，自动保存
+['input-title', 'input-recipient', 'input-content', 'input-salutation', 'input-name', 'input-date']
+  .forEach(id => {
+    document.getElementById(id).addEventListener('input', saveToStorage);
+  });
 
-        if (!overflowed && (bodyP1.offsetTop + bodyP1.offsetHeight) > maxHeight) {
-            overflowed = true;
-            page2.style.display = "flex";
-            targetBody = bodyP2;
-            targetFooter = footerP2;
-            targetBody.appendChild(pElem);
+// 生成落款HTML
+function createClosingHTML(salutation, name, date) {
+  return `
+    <div class="doc-salutation">${salutation}</div>
+    <div class="signature-wrapper">
+      <div class="signature-container">
+        <div class="sig-name">${name}</div>
+        <div class="sig-date">${date}</div>
+      </div>
+    </div>
+  `;
+}
+
+// 创建新页面
+function createPage(pageNum, title, recipient) {
+  const page = document.createElement('div');
+  page.className = 'a4-page';
+  page.id = `page-${pageNum}`;
+  
+  const isFirstPage = pageNum === 1;
+  
+  page.innerHTML = `
+    <div class="header-wrapper">
+      <img class="header-img" src="banner.jpg" id="header-img-${pageNum}">
+    </div>
+    <div class="paper-content">
+      ${isFirstPage ? `
+        <div class="doc-title" id="show-title-${pageNum}">${title}</div>
+        <div class="doc-recipient" id="show-recipient-${pageNum}">${recipient ? recipient + '：' : ''}</div>
+      ` : ''}
+      <div class="body-container" id="body-p${pageNum}"></div>
+      <div id="closing-p${pageNum}"></div>
+    </div>
+  `;
+  
+  return page;
+}
+
+// 计算页面内容高度
+function calculatePageContentHeight(page) {
+  if (!page) return 0;
+  const paperContent = page.querySelector('.paper-content');
+  if (!paperContent) return 0;
+  
+  const title = paperContent.querySelector('.doc-title');
+  const recipient = paperContent.querySelector('.doc-recipient');
+  const body = paperContent.querySelector('.body-container');
+  
+  let height = 40; // 初始padding-top
+  
+  if (title && title.offsetHeight) {
+    height += title.offsetHeight + 30; // 标题 + margin
+  }
+  if (recipient && recipient.offsetHeight && recipient.textContent.trim()) {
+    height += recipient.offsetHeight + 10;
+  }
+  if (body && body.offsetHeight) {
+    height += body.offsetHeight;
+  }
+  
+  return height;
+}
+
+// 计算页面总高度（包括落款）
+function calculatePageTotalHeight(page) {
+  if (!page) return 0;
+  const paperContent = page.querySelector('.paper-content');
+  return paperContent && paperContent.scrollHeight ? paperContent.scrollHeight : 0;
+}
+
+// 生成公文
+async function generateDocument() {
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>生成中...';
+  
+  try {
+    // 检查html2canvas是否加载
+    if (typeof html2canvas === 'undefined') {
+      throw new Error('html2canvas 庫未加載，請檢查網絡連接並刷新頁面');
+    }
+    
+    // 获取输入值
+    const title = document.getElementById('input-title').value;
+    const recipient = document.getElementById('input-recipient').value;
+    const content = document.getElementById('input-content').value;
+    const salutation = document.getElementById('input-salutation').value;
+    const name = document.getElementById('input-name').value;
+    const date = document.getElementById('input-date').value;
+    
+    // 清空渲染区域
+    const renderArea = document.getElementById('render-area');
+    renderArea.innerHTML = '';
+    
+    // 处理正文段落
+    const paragraphs = content.split('\n').filter(p => p.trim() !== '');
+    const maxContentHeight = 920; // 最大内容高度（不包括落款）
+    const maxTotalHeight = 1050; // 最大总高度（包括落款）
+    
+    let pages = [];
+    let currentPageNum = 1;
+    let currentPage = createPage(currentPageNum, title, recipient);
+    renderArea.appendChild(currentPage);
+    pages.push(currentPage);
+    
+    let currentBody = currentPage.querySelector('.body-container');
+    
+    // 逐段处理正文
+    for (let i = 0; i < paragraphs.length; i++) {
+      const pText = paragraphs[i];
+      const pElem = document.createElement('p');
+      pElem.textContent = pText;
+      currentBody.appendChild(pElem);
+      
+      // 检查当前页是否超出高度（不是最后一段时才检查）
+      if (i < paragraphs.length - 1) {
+        const contentHeight = calculatePageContentHeight(currentPage);
+        if (contentHeight > maxContentHeight) {
+          // 当前页已满，移除此段落并创建新页
+          currentBody.removeChild(pElem);
+          
+          // 创建新页面
+          currentPageNum++;
+          currentPage = createPage(currentPageNum, title, recipient);
+          renderArea.appendChild(currentPage);
+          pages.push(currentPage);
+          
+          currentBody = currentPage.querySelector('.body-container');
+          currentBody.appendChild(pElem);
         }
+      }
     }
-
-    const template = document.getElementById('closing-template').cloneNode(true);
-    template.style.display = "flex"; 
-    template.style.flexDirection = "column";
-    template.style.width = "100%";
-    template.querySelector('#show-salutation').innerText = document.getElementById('input-salutation').value;
-    template.querySelector('#show-name').innerText = document.getElementById('input-name').value;
-    template.querySelector('#show-date').innerText = document.getElementById('input-date').value;
     
-    targetFooter.appendChild(template);
+    // 在最后一页添加落款
+    const closingHTML = createClosingHTML(salutation, name, date);
+    const lastPageClosing = currentPage.querySelector(`#closing-p${currentPageNum}`);
+    lastPageClosing.innerHTML = closingHTML;
     
-    if (!overflowed && (bodyP1.offsetTop + bodyP1.offsetHeight + footerP1.offsetHeight) > 1000) {
-        page2.style.display = "flex";
-        footerP2.appendChild(template);
-        footerP1.innerHTML = ""; 
+    // 检查最后一页是否超出总高度，如果是则移到新页面
+    const lastPageTotalHeight = calculatePageTotalHeight(currentPage);
+    if (lastPageTotalHeight > maxTotalHeight && pages.length === 1) {
+      // 只有一页且超出，需要移到第二页
+      lastPageClosing.innerHTML = '';
+      
+      currentPageNum++;
+      const newPage = createPage(currentPageNum, title, recipient);
+      renderArea.appendChild(newPage);
+      pages.push(newPage);
+      
+      const newPageClosing = newPage.querySelector(`#closing-p${currentPageNum}`);
+      newPageClosing.innerHTML = closingHTML;
     }
-
-    setTimeout(async () => {
-        await captureAllPages("預覽圖片 (未蓋章)");
-        document.getElementById('result-container').style.display = "block";
-        document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
-        logToGAS();
-    }, 300);
-}
-
-async function applySealAndRegen() {
-    if (document.getElementById('seal-pw').value === "8888") {
-        document.querySelectorAll('.doc-seal').forEach(s => s.style.display = "block");
-        await captureAllPages("正式公文 (已蓋章)");
-        alert("公章已加蓋！");
+    
+    // 等待渲染完成
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // 等待所有banner图片加载
+    const bannerPromises = [];
+    for (let i = 1; i <= pages.length; i++) {
+      const img = document.getElementById(`header-img-${i}`);
+      if (img && !img.complete) {
+        bannerPromises.push(new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+          setTimeout(resolve, 2000);
+        }));
+      }
+    }
+    await Promise.all(bannerPromises);
+    
+    // 生成图片
+    await captureAllPages(title, pages);
+    
+    document.getElementById('result-container').style.display = 'block';
+    document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
+    
+    // 记录日志
+    logToGAS();
+    
+  } catch (error) {
+    console.error('生成失败:', error);
+    let errorMsg = '生成失敗: ';
+    if (error.message && error.message.includes('html2canvas')) {
+      errorMsg += '頁面渲染失敗，請檢查瀏覽器控制台';
+    } else if (error.message) {
+      errorMsg += error.message;
     } else {
-        alert("密碼錯誤。");
+      errorMsg += '未知錯誤，請檢查瀏覽器控制台(F12)查看詳情';
     }
+    alert(errorMsg);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '生成公文';
+  }
 }
 
-// 核心修改：分開捕捉每一頁
-async function captureAllPages(statusText) {
-    const listContainer = document.getElementById('result-images-list');
-    listContainer.innerHTML = ""; // 清空舊的
-    document.getElementById('result-status-text').innerText = "當前為：" + statusText;
-
-    const pages = [document.getElementById('page-1')];
-    if (document.getElementById('page-2').style.display === "flex") {
-        pages.push(document.getElementById('page-2'));
-    }
-
-    for (let i = 0; i < pages.length; i++) {
-        const canvas = await html2canvas(pages[i], {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            width: 794,
-            height: 1123
-        });
-
-        const itemDiv = document.createElement('div');
-        itemDiv.className = "result-item";
-        
-        const label = document.createElement('div');
-        label.className = "result-label";
-        label.innerText = (i === 0) ? "公告正面" : "公告背面";
-        
-        const img = document.createElement('img');
-        img.className = "result-img";
-        img.src = canvas.toDataURL("image/png");
-
-        itemDiv.appendChild(label);
-        itemDiv.appendChild(img);
-        listContainer.appendChild(itemDiv);
-    }
-}
-
-function logToGAS() {
-    const gas_url = "https://script.google.com/macros/s/AKfycbwRu5P74s_0LMbIB8u6qo04bX-NGGsGa9l2pc32xz4o16DgDq7RxIYXAGlfTkqbzO_8/exec"; 
-    fetch(gas_url, {
-      method: "POST",
-      mode: "no-cors",
-      body: JSON.stringify({ 
-          title: document.getElementById('input-title').value, 
-          recipient: document.getElementById('input-recipient').value, 
-          user: document.getElementById('input-name').value, 
-          content: document.getElementById('input-content').value 
-      })
+// 捕捉所有页面
+async function captureAllPages(title, pages) {
+  const listContainer = document.getElementById('result-images-list');
+  listContainer.innerHTML = '';
+  
+  for (let i = 0; i < pages.length; i++) {
+    const canvas = await html2canvas(pages[i], {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1123,
+      logging: false
     });
+    
+    const imgData = canvas.toDataURL('image/png');
+    
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'result-wrapper';
+    itemDiv.style.marginBottom = '20px';
+    
+    const label = document.createElement('div');
+    label.className = 'result-label';
+    label.textContent = pages.length === 1 ? '公文預覽' : `第 ${i + 1} 頁 / 共 ${pages.length} 頁`;
+    
+    const img = document.createElement('img');
+    img.className = 'result-img';
+    img.src = imgData;
+    img.style.cursor = 'pointer';
+    
+    itemDiv.appendChild(label);
+    itemDiv.appendChild(img);
+    listContainer.appendChild(itemDiv);
+  }
+}
+
+// 记录到Google Sheets
+function logToGAS() {
+  const gas_url = "https://script.google.com/macros/s/AKfycbwRu5P74s_0LMbIB8u6qo04bX-NGGsGa9l2pc32xz4o16DgDq7RxIYXAGlfTkqbzO_8/exec";
+  
+  fetch(gas_url, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      title: document.getElementById('input-title').value, 
+      recipient: document.getElementById('input-recipient').value, 
+      user: document.getElementById('input-name').value, 
+      content: document.getElementById('input-content').value,
+      timestamp: new Date().toISOString()
+    })
+  }).catch(err => console.log('記錄日誌失敗:', err));
 }
 </script>
+
 </body>
 </html>
